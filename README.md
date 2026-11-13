@@ -4,6 +4,9 @@ Timer pomodoro 25/5 menit + daftar deadline kuliah sederhana.
 Satu halaman web, tanpa akun, tanpa backend — data tersimpan di `localStorage` browser.
 
 Project untuk target mingguan: 1 project + 2 konten (minggu 16–22 Nov 2026).
+## Live demo
+
+Coba langsung tanpa install: **[weinssy.github.io/fokus-kuliah](https://weinssy.github.io/fokus-kuliah/)**
 
 ## Cara menjalankan
 
