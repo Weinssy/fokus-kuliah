@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fokus Kuliah — Pomodoro & Deadline</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>🎓 Fokus Kuliah</h1>
+      <p class="tagline">Timer pomodoro 25/5 + daftar deadline. Satu halaman, tanpa login.</p>
+    </header>
+
+    <!-- ===== TIMER ===== -->
+    <section class="card timer-card" aria-label="Timer Pomodoro">
+      <div class="mode-switch">
+        <button id="modeFocus" class="mode-btn active" type="button">Fokus 25:00</button>
+        <button id="modeBreak" class="mode-btn" type="button">Istirahat 5:00</button>
+      </div>
+
+      <div id="timerDisplay" class="timer-display">25:00</div>
+      <p id="timerStatus" class="timer-status">Siap mulai sesi fokus.</p>
+
+      <div class="timer-controls">
+        <button id="btnStart" type="button">▶ Mulai</button>
+        <button id="btnPause" type="button">⏸ Jeda</button>
+        <button id="btnReset" type="button">↺ Reset</button>
+      </div>
+
+      <p class="session-count">Sesi fokus selesai hari ini: <strong id="sessionCount">0</strong></p>
+    </section>
+
+    <!-- ===== DEADLINE ===== -->
+    <section class="card" aria-label="Daftar Deadline">
+      <h2>📌 Deadline Kuliah</h2>
+
+      <form id="taskForm" class="task-form">
+        <input id="taskName" type="text" placeholder="Nama tugas, mis. Laporan UTS" required />
+        <input id="taskCourse" type="text" placeholder="Mata kuliah" required />
+        <input id="taskDate" type="date" required />
+        <button type="submit">+ Tambah</button>
+      </form>
+
+      <ul id="taskList" class="task-list"></ul>
+      <p id="taskEmpty" class="empty">Belum ada deadline. Tambahkan tugas pertamamu di atas.</p>
+    </section>
+
+    <footer>
+      <small>Project minggu ini — Fokus Kuliah. Data deadline tersimpan di browser ini (localStorage).</small>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
