@@ -4,48 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fokus Kuliah — Pomodoro & Deadline</title>
+  <meta name="description" content="Timer pomodoro 25/5 dan daftar deadline kuliah. Satu halaman, tanpa login, data tersimpan di browser." />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body data-mode="focus">
   <main class="container">
-    <header>
-      <h1>🎓 Fokus Kuliah</h1>
+    <header class="hero">
+      <div class="logo-mark" aria-hidden="true">🎓</div>
+      <h1>Fokus Kuliah</h1>
       <p class="tagline">Timer pomodoro 25/5 + daftar deadline. Satu halaman, tanpa login.</p>
+      <p class="hero-badge">🍅 Teknik Pomodoro · 25 menit fokus · 5 menit istirahat</p>
     </header>
 
-    <!-- ===== TIMER ===== -->
-    <section class="card timer-card" aria-label="Timer Pomodoro">
-      <div class="mode-switch">
-        <button id="modeFocus" class="mode-btn active" type="button">Fokus 25:00</button>
-        <button id="modeBreak" class="mode-btn" type="button">Istirahat 5:00</button>
-      </div>
+    <div class="layout">
+      <!-- ===== TIMER ===== -->
+      <section class="card timer-card" aria-label="Timer Pomodoro">
+        <div class="mode-switch" role="group" aria-label="Mode timer">
+          <button id="modeFocus" class="mode-btn active" type="button">Fokus 25:00</button>
+          <button id="modeBreak" class="mode-btn" type="button">Istirahat 5:00</button>
+        </div>
 
-      <div id="timerDisplay" class="timer-display">25:00</div>
-      <p id="timerStatus" class="timer-status">Siap mulai sesi fokus.</p>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ring-bg" cx="100" cy="100" r="90" />
+            <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="90" />
+          </svg>
+          <div class="ring-center">
+            <div id="timerDisplay" class="timer-display">25:00</div>
+            <p id="timerStatus" class="timer-status">Siap mulai sesi fokus.</p>
+          </div>
+        </div>
 
-      <div class="timer-controls">
-        <button id="btnStart" type="button">▶ Mulai</button>
-        <button id="btnPause" type="button">⏸ Jeda</button>
-        <button id="btnReset" type="button">↺ Reset</button>
-      </div>
+        <div class="timer-controls">
+          <button id="btnStart" class="btn-primary" type="button">▶ Mulai</button>
+          <button id="btnPause" class="btn-ghost" type="button">⏸ Jeda</button>
+          <button id="btnReset" class="btn-ghost" type="button">↺ Reset</button>
+        </div>
 
-      <p class="session-count">Sesi fokus selesai hari ini: <strong id="sessionCount">0</strong></p>
-    </section>
+        <p class="session-pill">Sesi fokus selesai: <strong id="sessionCount">0</strong></p>
+      </section>
 
-    <!-- ===== DEADLINE ===== -->
-    <section class="card" aria-label="Daftar Deadline">
-      <h2>📌 Deadline Kuliah</h2>
+      <!-- ===== DEADLINE ===== -->
+      <section class="card" aria-label="Daftar Deadline">
+        <div class="section-head">
+          <h2>📌 Deadline Kuliah</h2>
+          <span id="taskCount" class="count-pill">0 aktif</span>
+        </div>
 
-      <form id="taskForm" class="task-form">
-        <input id="taskName" type="text" placeholder="Nama tugas, mis. Laporan UTS" required />
-        <input id="taskCourse" type="text" placeholder="Mata kuliah" required />
-        <input id="taskDate" type="date" required />
-        <button type="submit">+ Tambah</button>
-      </form>
+        <form id="taskForm" class="task-form">
+          <input id="taskName" type="text" placeholder="Nama tugas, mis. Laporan UTS" autocomplete="off" required />
+          <input id="taskCourse" type="text" placeholder="Mata kuliah" autocomplete="off" required />
+          <input id="taskDate" type="date" required />
+          <button type="submit">+ Tambah Deadline</button>
+        </form>
 
-      <ul id="taskList" class="task-list"></ul>
-      <p id="taskEmpty" class="empty">Belum ada deadline. Tambahkan tugas pertamamu di atas.</p>
-    </section>
+        <ul id="taskList" class="task-list"></ul>
+        <p id="taskEmpty" class="empty">🎉 Belum ada deadline. Tambahkan tugas pertamamu di atas.</p>
+      </section>
+    </div>
 
     <footer>
       <small>Project minggu ini — Fokus Kuliah. Data deadline tersimpan di browser ini (localStorage).</small>

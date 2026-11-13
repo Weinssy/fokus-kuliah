@@ -3,6 +3,7 @@
 
 // ---------- TIMER ----------
 const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
+const RING_CIRCUMFERENCE = 2 * Math.PI * 90; // r=90 pada SVG ring
 
 let mode = "focus";              // "focus" | "break"
 let remaining = DURATIONS.focus; // detik tersisa
@@ -23,9 +24,14 @@ function renderTimer() {
   const text = formatTime(remaining);
   display.textContent = text;
   document.title = `${text} — Fokus Kuliah`;
+  document.body.dataset.mode = mode;
   el("sessionCount").textContent = sessionsToday;
   el("modeFocus").classList.toggle("active", mode === "focus");
   el("modeBreak").classList.toggle("active", mode === "break");
+  const progress = DURATIONS[mode] ? remaining / DURATIONS[mode] : 0;
+  el("ringFg").style.strokeDashoffset = String(
+    RING_CIRCUMFERENCE * (1 - progress)
+  );
 }
 
 function setMode(newMode) {
@@ -98,12 +104,39 @@ function saveTasks() {
   localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
 }
 
+function formatDate(iso) {
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("id-ID", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function deadlineBadge(task) {
+  if (task.done) return { text: "Selesai", cls: "badge-done" };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(task.date + "T00:00:00");
+  const diff = Math.round((due - today) / 86400000);
+  if (Number.isNaN(diff)) return { text: "", cls: "badge-later" };
+  if (diff < 0) return { text: `Terlambat ${-diff} hari`, cls: "badge-late" };
+  if (diff === 0) return { text: "Hari ini", cls: "badge-today" };
+  if (diff === 1) return { text: "Besok", cls: "badge-soon" };
+  if (diff <= 7) return { text: `${diff} hari lagi`, cls: "badge-soon" };
+  return { text: `${diff} hari lagi`, cls: "badge-later" };
+}
+
 function renderTasks() {
   const list = el("taskList");
   list.innerHTML = "";
 
   const sorted = [...tasks].sort((a, b) => a.date.localeCompare(b.date));
   el("taskEmpty").style.display = sorted.length ? "none" : "block";
+  const active = tasks.filter((t) => !t.done).length;
+  el("taskCount").textContent = `${active} aktif`;
 
   for (const task of sorted) {
     const li = document.createElement("li");
@@ -126,7 +159,12 @@ function renderTasks() {
       <div class="date"></div>`;
     info.querySelector(".task-name").textContent = task.name;
     info.querySelector(".course").textContent = task.course;
-    info.querySelector(".date").textContent = task.date;
+    info.querySelector(".date").textContent = formatDate(task.date);
+
+    const badgeData = deadlineBadge(task);
+    const badge = document.createElement("span");
+    badge.className = "badge " + badgeData.cls;
+    badge.textContent = badgeData.text;
 
     const del = document.createElement("button");
     del.type = "button";
@@ -138,7 +176,7 @@ function renderTasks() {
       renderTasks();
     });
 
-    li.append(checkbox, info, del);
+    li.append(checkbox, info, badge, del);
     list.appendChild(li);
   }
 }
