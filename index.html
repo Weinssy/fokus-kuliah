@@ -3,70 +3,142 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fokus Kuliah — Pomodoro & Deadline</title>
-  <meta name="description" content="Timer pomodoro 25/5 dan daftar deadline kuliah. Satu halaman, tanpa login, data tersimpan di browser." />
+  <title>Fokus Kuliah | Timer Pomodoro &amp; Deadline</title>
+  <meta name="description" content="Timer pomodoro 25/5 dan catatan deadline kuliah dalam satu halaman. Tanpa akun, tersimpan di browser." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23F6F2EA'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23B8432E' stroke-width='3.5'/%3E%3Cpath d='M16 10v6l4 2' fill='none' stroke='%231C1B18' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-mode="focus">
-  <main class="container">
-    <header class="hero">
-      <div class="logo-mark" aria-hidden="true">🎓</div>
-      <h1>Fokus Kuliah</h1>
-      <p class="tagline">Timer pomodoro 25/5 + daftar deadline. Satu halaman, tanpa login.</p>
-      <p class="hero-badge">🍅 Teknik Pomodoro · 25 menit fokus · 5 menit istirahat</p>
-    </header>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
 
-    <div class="layout">
-      <!-- ===== TIMER ===== -->
-      <section class="card timer-card" aria-label="Timer Pomodoro">
-        <div class="mode-switch" role="group" aria-label="Mode timer">
-          <button id="modeFocus" class="mode-btn active" type="button">Fokus 25:00</button>
-          <button id="modeBreak" class="mode-btn" type="button">Istirahat 5:00</button>
+  <header class="masthead container">
+    <div class="masthead-title">
+      <h1>Fokus Kuliah</h1>
+      <p class="tagline">Timer belajar 25/5 dan catatan deadline kuliah dalam satu halaman.</p>
+    </div>
+    <div class="masthead-meta" aria-label="Ringkasan sesi hari ini">
+      <time id="todayDate" class="meta-item"></time>
+      <span class="meta-sep" aria-hidden="true"></span>
+      <span class="meta-item">Sesi selesai: <strong id="headerSessionCount">0</strong></span>
+    </div>
+  </header>
+
+  <main id="main-content" class="container" tabindex="-1">
+    <div id="storageAlert" class="alert-banner" role="alert" hidden>
+      <p id="storageAlertText" class="alert-text"></p>
+      <div class="alert-actions">
+        <button id="btnResetStorage" type="button" class="btn-inline">Atur ulang data</button>
+        <button id="btnDismissAlert" type="button" class="btn-inline">Tutup</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <section class="sheet timer-panel" aria-labelledby="timerHeading">
+        <div class="panel-head">
+          <h2 id="timerHeading">Timer Belajar</h2>
+          <span id="timerModeTag" class="mode-tag">Sesi Fokus</span>
+        </div>
+
+        <div class="mode-switch" role="group" aria-label="Pilih mode timer">
+          <button id="modeFocus" class="mode-btn is-active" type="button" aria-pressed="true">Fokus 25:00</button>
+          <button id="modeBreak" class="mode-btn" type="button" aria-pressed="false">Istirahat 5:00</button>
         </div>
 
         <div class="ring-wrap">
           <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
             <circle class="ring-bg" cx="100" cy="100" r="90" />
+            <g class="ring-ticks">
+              <line x1="100" y1="18" x2="100" y2="26" />
+              <line x1="182" y1="100" x2="174" y2="100" />
+              <line x1="100" y1="182" x2="100" y2="174" />
+              <line x1="18" y1="100" x2="26" y2="100" />
+            </g>
             <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="90" />
           </svg>
           <div class="ring-center">
             <div id="timerDisplay" class="timer-display">25:00</div>
-            <p id="timerStatus" class="timer-status">Siap mulai sesi fokus.</p>
+            <p id="timerStatus" class="timer-status" aria-live="polite">Siap mulai sesi fokus.</p>
           </div>
         </div>
 
         <div class="timer-controls">
-          <button id="btnStart" class="btn-primary" type="button">▶ Mulai</button>
-          <button id="btnPause" class="btn-ghost" type="button">⏸ Jeda</button>
-          <button id="btnReset" class="btn-ghost" type="button">↺ Reset</button>
+          <button id="btnStart" class="btn-primary" type="button">
+            <svg class="btn-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <polygon points="4,2.5 13.5,8 4,13.5" fill="currentColor" />
+            </svg>
+            <span id="btnStartLabel">Mulai</span>
+          </button>
+          <button id="btnPause" class="btn-secondary" type="button" disabled>
+            <svg class="btn-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="3.5" y="2.5" width="3" height="11" fill="currentColor" />
+              <rect x="9.5" y="2.5" width="3" height="11" fill="currentColor" />
+            </svg>
+            <span>Jeda</span>
+          </button>
+          <button id="btnReset" class="btn-secondary" type="button" disabled>
+            <svg class="btn-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8a5 5 0 1 0 1.4-3.5L3 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              <polyline points="3,2.5 3,6 6.5,6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Reset</span>
+          </button>
         </div>
 
-        <p class="session-pill">Sesi fokus selesai: <strong id="sessionCount">0</strong></p>
+        <div class="timer-foot">
+          <span>Sesi fokus selesai: <strong id="sessionCount">0</strong></span>
+          <button id="btnResetSessions" class="btn-link" type="button" disabled>Nolkan hitungan</button>
+        </div>
       </section>
 
-      <!-- ===== DEADLINE ===== -->
-      <section class="card" aria-label="Daftar Deadline">
-        <div class="section-head">
-          <h2>📌 Deadline Kuliah</h2>
-          <span id="taskCount" class="count-pill">0 aktif</span>
+      <section class="sheet ledger-panel" aria-labelledby="ledgerHeading">
+        <div class="panel-head">
+          <h2 id="ledgerHeading">Daftar Deadline</h2>
+          <span id="taskCount" class="count-tag">0 aktif</span>
         </div>
 
-        <form id="taskForm" class="task-form">
-          <input id="taskName" type="text" placeholder="Nama tugas, mis. Laporan UTS" autocomplete="off" required />
-          <input id="taskCourse" type="text" placeholder="Mata kuliah" autocomplete="off" required />
-          <input id="taskDate" type="date" required />
-          <button type="submit">+ Tambah Deadline</button>
+        <form id="taskForm" class="task-form" novalidate>
+          <div id="formError" class="form-error" role="alert" hidden></div>
+
+          <div class="field field-full">
+            <label for="taskName">Nama tugas</label>
+            <input id="taskName" name="taskName" type="text" placeholder="Contoh: Laporan Praktikum Basis Data" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="taskCourse">Mata kuliah</label>
+            <input id="taskCourse" name="taskCourse" type="text" placeholder="Contoh: Sistem Informasi" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="taskDate">Batas waktu</label>
+            <input id="taskDate" name="taskDate" type="date" required />
+          </div>
+
+          <button type="submit" class="btn-primary form-submit">Tambah Deadline</button>
         </form>
 
+        <div class="ledger-toolbar">
+          <div class="filter-group" role="group" aria-label="Filter status tugas">
+            <button type="button" class="filter-btn is-active" data-filter="all" aria-pressed="true">Semua</button>
+            <button type="button" class="filter-btn" data-filter="active" aria-pressed="false">Aktif</button>
+            <button type="button" class="filter-btn" data-filter="done" aria-pressed="false">Selesai</button>
+          </div>
+          <button id="btnClearDone" type="button" class="btn-link" hidden>Hapus yang selesai</button>
+        </div>
+
+        <p id="taskLoading" class="state-box" aria-live="polite">Memuat daftar deadline tersimpan...</p>
         <ul id="taskList" class="task-list"></ul>
-        <p id="taskEmpty" class="empty">🎉 Belum ada deadline. Tambahkan tugas pertamamu di atas.</p>
+        <div id="taskEmpty" class="state-box empty-box" hidden>
+          <p id="taskEmptyText"></p>
+          <button id="btnShowAll" type="button" class="btn-inline" hidden>Tampilkan semua tugas</button>
+        </div>
       </section>
     </div>
-
-    <footer>
-      <small>Project minggu ini — Fokus Kuliah. Data deadline tersimpan di browser ini (localStorage).</small>
-    </footer>
   </main>
+
+  <footer class="site-footer container">
+    <small>Fokus Kuliah. Data timer dan deadline tersimpan secara lokal di browser ini.</small>
+  </footer>
 
   <script src="script.js"></script>
 </body>
