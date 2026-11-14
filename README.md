@@ -40,14 +40,6 @@ fokus-kuliah/
   README.md    dokumentasi proyek
 ```
 
-## Checklist minggu ini
-
-- [x] Kode awal: timer dan deadline berjalan
-- [x] Polish tampilan dan aksesibilitas (`DESIGN.md`, kontras WCAG AA, tata letak responsif)
-- [ ] Selasa-Rabu: tes sendiri pemakaian harian, perbaiki jika ada yang terasa janggal
-- [ ] Kamis: ambil screenshot untuk README, rekam demo vertikal 30-45 detik
-- [ ] Jumat: konten demo terbit (TikTok + YouTube Shorts)
-
 ## Sengaja ditunda (bukan bagian MVP)
 
 Statistik belajar mingguan, sinkron kalender, akun pengguna, durasi custom, dan tema / dark mode.
