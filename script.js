@@ -1,6 +1,7 @@
 const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
 const RING_CIRCUMFERENCE = 2 * Math.PI * 90;
 const SESSIONS_KEY = "fk_sessions";
+const SESSIONS_DATE_KEY = "fk_sessions_date";
 const TASKS_KEY = "fk_tasks";
 
 const el = (id) => document.getElementById(id);
@@ -46,6 +47,26 @@ function writeLocalItem(key, value) {
     showStorageAlert("Gagal menyimpan data ke penyimpanan browser. Periksa kuota atau izin situs.");
     return false;
   }
+}
+
+function todayKey() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function readSessionsToday() {
+  try {
+    if (localStorage.getItem(SESSIONS_DATE_KEY) !== todayKey()) {
+      writeLocalItem(SESSIONS_KEY, "0");
+      writeLocalItem(SESSIONS_DATE_KEY, todayKey());
+      return 0;
+    }
+  } catch {
+    // Fall through to the stored count if the date check cannot run.
+  }
+  return readLocalCount(SESSIONS_KEY);
 }
 
 function readLocalTasks() {
@@ -157,6 +178,7 @@ function notifySession(message) {
 function onSessionDone() {
   stopTimer();
   if (mode === "focus") {
+    sessionsToday = readSessionsToday();
     sessionsToday += 1;
     writeLocalItem(SESSIONS_KEY, String(sessionsToday));
     const message = "Sesi fokus selesai. Waktunya istirahat 5 menit.";
@@ -216,6 +238,7 @@ el("modeBreak").addEventListener("click", () => setMode("break"));
 el("btnResetSessions").addEventListener("click", () => {
   sessionsToday = 0;
   writeLocalItem(SESSIONS_KEY, "0");
+  writeLocalItem(SESSIONS_DATE_KEY, todayKey());
   renderTimer();
 });
 
@@ -490,6 +513,7 @@ el("btnResetStorage").addEventListener("click", () => {
   try {
     localStorage.removeItem(TASKS_KEY);
     localStorage.removeItem(SESSIONS_KEY);
+    localStorage.removeItem(SESSIONS_DATE_KEY);
     storageWritable = true;
   } catch {
     // Keep going with in-memory defaults if storage remains blocked.
@@ -503,7 +527,7 @@ el("btnResetStorage").addEventListener("click", () => {
 
 function initApp() {
   renderTodayDate();
-  sessionsToday = readLocalCount(SESSIONS_KEY);
+  sessionsToday = readSessionsToday();
   tasks = readLocalTasks();
   el("taskLoading").hidden = true;
   renderTimer();
