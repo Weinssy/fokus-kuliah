@@ -1,6 +1,6 @@
 # Fokus Kuliah
 
-Timer pomodoro 25/5 menit dan daftar deadline kuliah dalam satu halaman web. Tanpa akun, tanpa backend, dan semua data tersimpan di `localStorage` browser.
+Timer pomodoro (bawaan 25/5 menit, durasi dapat diatur) dan daftar deadline kuliah dalam satu halaman web. Tanpa akun, tanpa backend, dan semua data tersimpan di `localStorage` browser.
 
 Project target mingguan: 1 project dan 2 konten (minggu 16-22 Nov 2026).
 
@@ -25,7 +25,7 @@ python -m http.server
 
 ## Fitur
 
-- **Timer Pomodoro:** mode Fokus 25 menit dan Istirahat 5 menit, tombol Mulai / Lanjutkan / Jeda / Reset, tampilan sisa waktu di judul tab browser, penghitung sesi fokus selesai beserta tombol nolkan hitungan, notifikasi browser saat sesi berakhir, serta perhitungan berbasis timestamp agar tetap akurat saat tab berada di latar.
+- **Timer Pomodoro:** siklus penuh berisi mode Fokus (bawaan 25 menit), Istirahat (bawaan 5 menit), dan Istirahat Panjang (bawaan 15 menit) yang otomatis menjadi jeda setelah 4 sesi fokus selesai, lengkap dengan penanda posisi siklus di dekat timer. Ketiga durasi dapat diatur dari panel Pengaturan Sesi dan tersimpan di `localStorage`. Tombol Mulai / Lanjutkan / Jeda / Reset, tampilan sisa waktu di judul tab browser, penghitung sesi fokus selesai beserta tombol nolkan hitungan, bunyi penanda dari Web Audio API saat sesi berakhir, saklar notifikasi browser untuk sesi selesai (izin diminta hanya saat saklar diaktifkan), serta perhitungan berbasis timestamp agar tetap akurat saat tab berada di latar.
 - **Daftar deadline:** formulir tambah tugas (nama tugas, mata kuliah, batas waktu) dengan validasi input, tandai selesai, filter status (`Semua`, `Aktif`, `Selesai`), hapus per tugas atau hapus semua yang selesai, pengurutan otomatis dari deadline terdekat, dan pemulihan saat data `localStorage` rusak.
 - **Statistik fokus:** setiap sesi fokus yang selesai tercatat per hari di `localStorage`, lalu ditampilkan sebagai total menit dan jumlah sesi pada minggu berjalan (Senin sampai Minggu) beserta grafik batang 7 hari terakhir. Statistik diperbarui otomatis begitu sesi selesai, tanpa perlu memuat ulang halaman.
 - **Desain dan aksesibilitas:** memakai arah visual Kertas & Tinta Kampus (lihat [DESIGN.md](DESIGN.md)), mendukung navigasi keyboard, indikator fokus terlihat, serta tata letak responsif untuk layar ponsel, tablet, dan desktop.
@@ -43,4 +43,4 @@ fokus-kuliah/
 
 ## Sengaja ditunda (bukan bagian MVP)
 
-Sinkron kalender, akun pengguna, durasi custom, dan tema / dark mode.
+Sinkron kalender, akun pengguna, dan tema / dark mode.

@@ -1,9 +1,19 @@
-const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
+const DURATIONS = { focus: 25 * 60, break: 5 * 60, longBreak: 15 * 60 };
 const RING_CIRCUMFERENCE = 2 * Math.PI * 90;
 const SESSIONS_KEY = "fk_sessions";
 const SESSIONS_DATE_KEY = "fk_sessions_date";
 const HISTORY_KEY = "fk_history";
 const TASKS_KEY = "fk_tasks";
+const SETTINGS_KEY = "fk_settings";
+const CYCLE_KEY = "fk_cycle";
+const CYCLE_TARGET = 4;
+const DEFAULT_SETTINGS = { focus: 25, break: 5, longBreak: 15, notify: false };
+const SETTING_RANGES = { focus: [1, 180], break: [1, 90], longBreak: [1, 90] };
+const MODE_LABELS = {
+  focus: "Sesi Fokus",
+  break: "Sesi Istirahat",
+  longBreak: "Istirahat Panjang",
+};
 const DAY_NAMES_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 const el = (id) => document.getElementById(id);
@@ -14,6 +24,8 @@ let timerId = null;
 let endTimestamp = null;
 let hasPausedMidSession = false;
 let sessionsToday = 0;
+let settings = { ...DEFAULT_SETTINGS };
+let cycleCount = 0;
 let focusHistory = {};
 let tasks = [];
 let activeFilter = "all";
@@ -75,6 +87,54 @@ function readSessionsToday() {
   return readLocalCount(SESSIONS_KEY);
 }
 
+// ---------- Pengaturan Sesi & Siklus Pomodoro ----------
+
+function sanitizeSettingValue(key, value) {
+  const n = Number(value);
+  const [min, max] = SETTING_RANGES[key];
+  if (!Number.isFinite(n)) return DEFAULT_SETTINGS[key];
+  const rounded = Math.round(n);
+  return rounded >= min && rounded <= max ? rounded : DEFAULT_SETTINGS[key];
+}
+
+function readLocalSettings() {
+  const result = { ...DEFAULT_SETTINGS };
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return result;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return result;
+    for (const key of ["focus", "break", "longBreak"]) {
+      result[key] = sanitizeSettingValue(key, parsed[key]);
+    }
+    result.notify = parsed.notify === true;
+    return result;
+  } catch {
+    // Pengaturan yang rusak kembali ke nilai bawaan agar timer tetap jalan.
+    return result;
+  }
+}
+
+function applySettings() {
+  DURATIONS.focus = settings.focus * 60;
+  DURATIONS.break = settings.break * 60;
+  DURATIONS.longBreak = settings.longBreak * 60;
+}
+
+function saveSettings() {
+  writeLocalItem(SETTINGS_KEY, JSON.stringify(settings));
+  applySettings();
+}
+
+function readCycleCount() {
+  const n = readLocalCount(CYCLE_KEY);
+  return Math.min(n, CYCLE_TARGET - 1);
+}
+
+function saveCycleCount() {
+  writeLocalItem(CYCLE_KEY, String(cycleCount));
+}
+
 // ---------- Riwayat & Statistik Fokus ----------
 
 function sanitizeHistoryEntry(value) {
@@ -121,7 +181,7 @@ function ensureHistorySeed() {
   if (!hasStoredHistory && sessionsToday > 0) {
     focusHistory[todayKey()] = {
       sessions: sessionsToday,
-      minutes: sessionsToday * (DURATIONS.focus / 60),
+      minutes: sessionsToday * settings.focus,
     };
     saveHistory();
   }
@@ -278,18 +338,27 @@ function renderTimer() {
   document.title = `${text} | Fokus Kuliah`;
   document.body.dataset.mode = mode;
 
-  el("timerModeTag").textContent = mode === "focus" ? "Sesi Fokus" : "Sesi Istirahat";
+  el("timerModeTag").textContent = MODE_LABELS[mode];
   el("sessionCount").textContent = String(sessionsToday);
   el("headerSessionCount").textContent = String(sessionsToday);
+  el("cycleStatus").textContent =
+    `Siklus: ${cycleCount} dari ${CYCLE_TARGET} sesi menuju istirahat panjang`;
 
-  const focusBtn = el("modeFocus");
-  const breakBtn = el("modeBreak");
-  focusBtn.classList.toggle("is-active", mode === "focus");
-  breakBtn.classList.toggle("is-active", mode === "break");
-  focusBtn.setAttribute("aria-pressed", String(mode === "focus"));
-  breakBtn.setAttribute("aria-pressed", String(mode === "break"));
+  const modeButtons = {
+    focus: el("modeFocus"),
+    break: el("modeBreak"),
+    longBreak: el("modeLongBreak"),
+  };
+  for (const [key, btn] of Object.entries(modeButtons)) {
+    btn.classList.toggle("is-active", mode === key);
+    btn.setAttribute("aria-pressed", String(mode === key));
+  }
+  modeButtons.focus.textContent = `Fokus ${formatTime(DURATIONS.focus)}`;
+  modeButtons.break.textContent = `Istirahat ${formatTime(DURATIONS.break)}`;
+  modeButtons.longBreak.textContent = `Istirahat Panjang ${formatTime(DURATIONS.longBreak)}`;
 
-  const progress = DURATIONS[mode] ? remaining / DURATIONS[mode] : 0;
+  const rawProgress = DURATIONS[mode] ? remaining / DURATIONS[mode] : 0;
+  const progress = Math.min(1, Math.max(0, rawProgress));
   el("ringFg").style.strokeDashoffset = String(RING_CIRCUMFERENCE * (1 - progress));
   updateControlStates();
 }
@@ -307,20 +376,130 @@ function setMode(newMode, customStatus) {
   mode = newMode;
   remaining = DURATIONS[mode];
   hasPausedMidSession = false;
-  el("timerStatus").textContent =
-    customStatus ||
-    (mode === "focus" ? "Siap mulai sesi fokus." : "Siap istirahat sebentar.");
+  const defaultStatus = {
+    focus: "Siap mulai sesi fokus.",
+    break: "Siap istirahat sebentar.",
+    longBreak: "Siap istirahat panjang.",
+  };
+  el("timerStatus").textContent = customStatus || defaultStatus[mode];
   renderTimer();
 }
 
-function notifySession(message) {
-  if ("Notification" in window && Notification.permission === "granted") {
+// ---------- Bunyi Selesai Sesi (Web Audio, tanpa berkas luar) ----------
+
+let audioCtx = null;
+
+function ensureAudioContext() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") {
+      const resumed = audioCtx.resume();
+      if (resumed && typeof resumed.catch === "function") resumed.catch(() => {});
+    }
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+
+function playTone(ctx, frequency, startAt, duration) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = frequency;
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.22, startAt + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startAt);
+  osc.stop(startAt + duration + 0.05);
+}
+
+function playDoneSound(kind) {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  try {
+    const now = ctx.currentTime;
+    if (kind === "focus") {
+      playTone(ctx, 880, now, 0.22);
+      playTone(ctx, 1174.66, now + 0.18, 0.32);
+    } else {
+      playTone(ctx, 659.25, now, 0.22);
+      playTone(ctx, 523.25, now + 0.18, 0.32);
+    }
+  } catch {
+    // Bunyi bersifat tambahan; kegagalannya tidak boleh mengganggu timer.
+  }
+}
+
+// ---------- Notifikasi Browser (opt-in lewat saklar) ----------
+
+function notificationSupported() {
+  return "Notification" in window;
+}
+
+function notifySession(title, body) {
+  if (!settings.notify || !notificationSupported()) return;
+  if (Notification.permission !== "granted") return;
+  try {
+    new Notification(title, { body });
+  } catch {
+    // Ignore notification errors in restricted browser contexts.
+  }
+}
+
+function renderNotifyControl() {
+  const toggle = el("notifyToggle");
+  const status = el("notifyStatus");
+  if (!notificationSupported()) {
+    toggle.checked = false;
+    toggle.disabled = true;
+    status.textContent =
+      "Browser ini tidak mendukung notifikasi. Sesi selesai tetap ditandai bunyi dan teks status.";
+    return;
+  }
+  toggle.disabled = false;
+  if (Notification.permission === "denied") {
+    toggle.checked = false;
+    status.textContent =
+      "Izin notifikasi ditolak oleh browser. Ubah izin situs di pengaturan browser bila ingin mengaktifkannya.";
+    return;
+  }
+  if (settings.notify && Notification.permission === "granted") {
+    toggle.checked = true;
+    status.textContent = "Aktif. Notifikasi muncul setiap sesi selesai.";
+    return;
+  }
+  toggle.checked = false;
+  status.textContent = "Nonaktif.";
+}
+
+async function onNotifyToggle() {
+  const toggle = el("notifyToggle");
+  if (!toggle.checked) {
+    settings.notify = false;
+    saveSettings();
+    renderNotifyControl();
+    return;
+  }
+  if (!notificationSupported()) {
+    renderNotifyControl();
+    return;
+  }
+  let permission = Notification.permission;
+  if (permission === "default") {
     try {
-      new Notification("Fokus Kuliah", { body: message });
+      permission = await Notification.requestPermission();
     } catch {
-      // Ignore notification errors in restricted browser contexts.
+      permission = Notification.permission;
     }
   }
+  settings.notify = permission === "granted";
+  saveSettings();
+  renderNotifyControl();
 }
 
 function onSessionDone() {
@@ -329,14 +508,32 @@ function onSessionDone() {
     sessionsToday = readSessionsToday();
     sessionsToday += 1;
     writeLocalItem(SESSIONS_KEY, String(sessionsToday));
-    recordFocusSession(DURATIONS.focus / 60);
+    recordFocusSession(settings.focus);
     renderStats();
-    const message = "Sesi fokus selesai. Waktunya istirahat 5 menit.";
-    notifySession(message);
-    setMode("break", message);
+    playDoneSound("focus");
+
+    cycleCount += 1;
+    let nextMode = "break";
+    if (cycleCount >= CYCLE_TARGET) {
+      nextMode = "longBreak";
+      cycleCount = 0;
+    }
+    saveCycleCount();
+
+    const nextMinutes = nextMode === "longBreak" ? settings.longBreak : settings.break;
+    const message =
+      nextMode === "longBreak"
+        ? `Sesi fokus selesai. Waktunya istirahat panjang ${nextMinutes} menit.`
+        : `Sesi fokus selesai. Waktunya istirahat ${nextMinutes} menit.`;
+    notifySession("Sesi fokus selesai", message);
+    setMode(nextMode, message);
   } else {
-    const message = "Istirahat selesai. Siap mulai fokus lagi.";
-    notifySession(message);
+    const wasLongBreak = mode === "longBreak";
+    playDoneSound("break");
+    const message = wasLongBreak
+      ? "Istirahat panjang selesai. Siap mulai fokus lagi."
+      : "Istirahat selesai. Siap mulai fokus lagi.";
+    notifySession("Istirahat selesai", message);
     setMode("focus", message);
   }
 }
@@ -354,14 +551,8 @@ function tickTimer() {
 
 function startTimer() {
   if (timerId !== null) return;
-  if ("Notification" in window && Notification.permission === "default") {
-    try {
-      const req = Notification.requestPermission();
-      if (req && typeof req.catch === "function") req.catch(() => {});
-    } catch {
-      // Ignore permission prompt failures.
-    }
-  }
+  // Konteks audio dibuka dari gestur pengguna (klik Mulai) agar tidak diblokir browser.
+  ensureAudioContext();
   hasPausedMidSession = false;
   endTimestamp = Date.now() + remaining * 1000;
   el("timerStatus").textContent =
@@ -384,6 +575,80 @@ el("btnPause").addEventListener("click", pauseTimer);
 el("btnReset").addEventListener("click", () => setMode(mode));
 el("modeFocus").addEventListener("click", () => setMode("focus"));
 el("modeBreak").addEventListener("click", () => setMode("break"));
+el("modeLongBreak").addEventListener("click", () => setMode("longBreak"));
+el("notifyToggle").addEventListener("change", onNotifyToggle);
+
+// ---------- Formulir Pengaturan Durasi ----------
+
+const SETTING_FIELDS = [
+  { id: "setFocus", key: "focus", label: "Fokus" },
+  { id: "setBreak", key: "break", label: "Istirahat" },
+  { id: "setLongBreak", key: "longBreak", label: "Istirahat panjang" },
+];
+
+function clearSettingsErrors() {
+  el("settingsError").hidden = true;
+  el("settingsError").textContent = "";
+  for (const field of SETTING_FIELDS) {
+    el(field.id).removeAttribute("aria-invalid");
+  }
+}
+
+el("settingsForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearSettingsErrors();
+  el("settingsStatus").textContent = "";
+
+  const invalid = [];
+  const next = { ...settings };
+  for (const field of SETTING_FIELDS) {
+    const input = el(field.id);
+    const raw = input.value.trim();
+    const value = Number(raw);
+    const [min, max] = SETTING_RANGES[field.key];
+    if (raw === "" || !Number.isFinite(value) || value < min || value > max) {
+      input.setAttribute("aria-invalid", "true");
+      invalid.push(field);
+    } else {
+      next[field.key] = Math.round(value);
+    }
+  }
+
+  if (invalid.length > 0) {
+    const names = invalid.map((field) => field.label).join(", ");
+    const errorEl = el("settingsError");
+    errorEl.textContent =
+      `Periksa lagi kolom berikut: ${names}. Fokus 1 sampai 180 menit, istirahat dan istirahat panjang 1 sampai 90 menit. Pengaturan sebelumnya tidak berubah.`;
+    errorEl.hidden = false;
+    el(invalid[0].id).focus();
+    return;
+  }
+
+  settings = next;
+  saveSettings();
+  if (timerId === null && !hasPausedMidSession) {
+    remaining = DURATIONS[mode];
+  }
+  renderTimer();
+  el("settingsStatus").textContent =
+    "Pengaturan tersimpan. Durasi baru berlaku mulai sesi berikutnya.";
+});
+
+for (const field of SETTING_FIELDS) {
+  el(field.id).addEventListener("input", () => {
+    el(field.id).removeAttribute("aria-invalid");
+    if (!document.querySelector('#settingsForm [aria-invalid="true"]')) {
+      el("settingsError").hidden = true;
+    }
+  });
+}
+
+function renderSettingsForm() {
+  el("setFocus").value = String(settings.focus);
+  el("setBreak").value = String(settings.break);
+  el("setLongBreak").value = String(settings.longBreak);
+  renderNotifyControl();
+}
 
 el("btnResetSessions").addEventListener("click", () => {
   sessionsToday = 0;
@@ -665,6 +930,8 @@ el("btnResetStorage").addEventListener("click", () => {
     localStorage.removeItem(SESSIONS_KEY);
     localStorage.removeItem(SESSIONS_DATE_KEY);
     localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem(SETTINGS_KEY);
+    localStorage.removeItem(CYCLE_KEY);
     storageWritable = true;
   } catch {
     // Keep going with in-memory defaults if storage remains blocked.
@@ -672,14 +939,24 @@ el("btnResetStorage").addEventListener("click", () => {
   tasks = [];
   sessionsToday = 0;
   focusHistory = {};
+  settings = { ...DEFAULT_SETTINGS };
+  applySettings();
+  cycleCount = 0;
+  setMode("focus", "Siap mulai sesi fokus.");
   hideStorageAlert();
   renderTimer();
   renderStats();
   renderTasks();
+  renderSettingsForm();
+  el("settingsStatus").textContent = "";
 });
 
 function initApp() {
   renderTodayDate();
+  settings = readLocalSettings();
+  applySettings();
+  remaining = DURATIONS[mode];
+  cycleCount = readCycleCount();
   sessionsToday = readSessionsToday();
   ensureHistorySeed();
   tasks = readLocalTasks();
@@ -687,6 +964,7 @@ function initApp() {
   renderTimer();
   renderStats();
   renderTasks();
+  renderSettingsForm();
 }
 
 initApp();

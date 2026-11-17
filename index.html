@@ -42,6 +42,7 @@
         <div class="mode-switch" role="group" aria-label="Pilih mode timer">
           <button id="modeFocus" class="mode-btn is-active" type="button" aria-pressed="true">Fokus 25:00</button>
           <button id="modeBreak" class="mode-btn" type="button" aria-pressed="false">Istirahat 5:00</button>
+          <button id="modeLongBreak" class="mode-btn" type="button" aria-pressed="false">Istirahat Panjang 15:00</button>
         </div>
 
         <div class="ring-wrap">
@@ -84,9 +85,42 @@
           </button>
         </div>
 
+        <p id="cycleStatus" class="cycle-status">Siklus: 0 dari 4 sesi menuju istirahat panjang</p>
+
         <div class="timer-foot">
           <span>Sesi fokus selesai: <strong id="sessionCount">0</strong></span>
           <button id="btnResetSessions" class="btn-link" type="button" disabled>Nolkan hitungan</button>
+        </div>
+
+        <div class="settings-block">
+          <h3 class="settings-title">Pengaturan Sesi</h3>
+          <form id="settingsForm" novalidate>
+            <div id="settingsError" class="form-error" role="alert" hidden></div>
+            <div class="settings-grid">
+              <div class="field">
+                <label for="setFocus">Fokus (menit)</label>
+                <input id="setFocus" name="setFocus" type="number" min="1" max="180" step="1" value="25" inputmode="numeric" required />
+              </div>
+              <div class="field">
+                <label for="setBreak">Istirahat (menit)</label>
+                <input id="setBreak" name="setBreak" type="number" min="1" max="90" step="1" value="5" inputmode="numeric" required />
+              </div>
+              <div class="field">
+                <label for="setLongBreak">Istirahat panjang (menit)</label>
+                <input id="setLongBreak" name="setLongBreak" type="number" min="1" max="90" step="1" value="15" inputmode="numeric" required />
+              </div>
+            </div>
+            <button type="submit" class="btn-secondary settings-submit">Simpan Pengaturan</button>
+            <p id="settingsStatus" class="settings-status" aria-live="polite"></p>
+          </form>
+
+          <div class="notify-row">
+            <label class="notify-label" for="notifyToggle">
+              <input id="notifyToggle" type="checkbox" />
+              <span>Notifikasi selesai sesi</span>
+            </label>
+            <p id="notifyStatus" class="notify-status">Nonaktif.</p>
+          </div>
         </div>
       </section>
 

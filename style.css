@@ -18,7 +18,8 @@
   --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
-body[data-mode="break"] {
+body[data-mode="break"],
+body[data-mode="longBreak"] {
   --accent: #1f6e58;
   --accent-hover: #175544;
   --accent-tint: #e5f2ed;
@@ -268,7 +269,7 @@ main.container {
 /* ===== Timer Panel ===== */
 .mode-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 4px;
   background: var(--inset);
@@ -278,13 +279,13 @@ main.container {
 
 .mode-btn {
   min-height: 44px;
-  padding: 8px 12px;
+  padding: 8px 6px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
@@ -463,6 +464,92 @@ main.container {
 
 .btn-link[hidden] {
   display: none;
+}
+
+/* ===== Cycle Marker & Session Settings ===== */
+.cycle-status {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.settings-title {
+  margin: 0 0 12px;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.settings-status {
+  margin: 8px 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--accent-hover);
+}
+
+.settings-status:empty {
+  margin: 0;
+}
+
+.notify-row {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.notify-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notify-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.notify-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+.notify-status {
+  margin: 2px 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
 }
 
 /* ===== Deadline Ledger Panel ===== */
