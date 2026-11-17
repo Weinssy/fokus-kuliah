@@ -134,6 +134,29 @@
         </div>
       </section>
     </div>
+
+    <section class="sheet stats-panel" aria-labelledby="statsHeading">
+      <div class="panel-head">
+        <h2 id="statsHeading">Statistik Fokus</h2>
+        <span class="count-tag">Minggu berjalan</span>
+      </div>
+
+      <div class="stats-summary">
+        <div class="stat-figure">
+          <span class="stat-value" id="statWeekMinutes">0</span>
+          <span class="stat-label">menit fokus minggu ini</span>
+        </div>
+        <div class="stat-figure">
+          <span class="stat-value" id="statWeekSessions">0</span>
+          <span class="stat-label">sesi selesai minggu ini</span>
+        </div>
+      </div>
+
+      <p id="statsEmpty" class="state-box stats-empty" hidden>Belum ada sesi fokus yang tercatat. Selesaikan satu sesi fokus sampai tuntas dan riwayat belajarmu akan muncul di sini.</p>
+
+      <div id="statsChart" class="chart" role="img" aria-label="Grafik menit fokus 7 hari terakhir"></div>
+      <p class="stats-note">Grafik menampilkan menit fokus 7 hari terakhir. Batang berwarna aksen adalah hari ini.</p>
+    </section>
   </main>
 
   <footer class="site-footer container">

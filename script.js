@@ -2,7 +2,9 @@ const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
 const RING_CIRCUMFERENCE = 2 * Math.PI * 90;
 const SESSIONS_KEY = "fk_sessions";
 const SESSIONS_DATE_KEY = "fk_sessions_date";
+const HISTORY_KEY = "fk_history";
 const TASKS_KEY = "fk_tasks";
+const DAY_NAMES_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 const el = (id) => document.getElementById(id);
 
@@ -12,6 +14,7 @@ let timerId = null;
 let endTimestamp = null;
 let hasPausedMidSession = false;
 let sessionsToday = 0;
+let focusHistory = {};
 let tasks = [];
 let activeFilter = "all";
 let storageWritable = true;
@@ -49,11 +52,14 @@ function writeLocalItem(key, value) {
   }
 }
 
+function dateKeyOf(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 function todayKey() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
+  return dateKeyOf(new Date());
 }
 
 function readSessionsToday() {
@@ -67,6 +73,148 @@ function readSessionsToday() {
     // Fall through to the stored count if the date check cannot run.
   }
   return readLocalCount(SESSIONS_KEY);
+}
+
+// ---------- Riwayat & Statistik Fokus ----------
+
+function sanitizeHistoryEntry(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const sessions = Number(value.sessions);
+  const minutes = Number(value.minutes);
+  if (!Number.isFinite(sessions) || !Number.isFinite(minutes)) return null;
+  if (sessions < 0 || minutes < 0) return null;
+  return { sessions: Math.floor(sessions), minutes: Math.floor(minutes) };
+}
+
+function readLocalHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const clean = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      const entry = sanitizeHistoryEntry(value);
+      if (entry) clean[key] = entry;
+    }
+    return clean;
+  } catch {
+    // Riwayat yang rusak diperlakukan sebagai kosong agar halaman tetap jalan.
+    return {};
+  }
+}
+
+function saveHistory() {
+  writeLocalItem(HISTORY_KEY, JSON.stringify(focusHistory));
+}
+
+// Benih sekali saja untuk pengguna lama: bila belum ada riwayat sama sekali,
+// counter sesi hari ini yang sudah berjalan menjadi entri hari ini.
+function ensureHistorySeed() {
+  focusHistory = readLocalHistory();
+  let hasStoredHistory = false;
+  try {
+    hasStoredHistory = localStorage.getItem(HISTORY_KEY) !== null;
+  } catch {
+    hasStoredHistory = false;
+  }
+  if (!hasStoredHistory && sessionsToday > 0) {
+    focusHistory[todayKey()] = {
+      sessions: sessionsToday,
+      minutes: sessionsToday * (DURATIONS.focus / 60),
+    };
+    saveHistory();
+  }
+}
+
+function recordFocusSession(durationMinutes) {
+  const key = todayKey();
+  const entry = focusHistory[key] || { sessions: 0, minutes: 0 };
+  entry.sessions += 1;
+  entry.minutes += durationMinutes;
+  focusHistory[key] = entry;
+  saveHistory();
+}
+
+function summarizeWeek(history, now = new Date()) {
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  let sessions = 0;
+  let minutes = 0;
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    const entry = history[dateKeyOf(day)];
+    if (entry) {
+      sessions += entry.sessions;
+      minutes += entry.minutes;
+    }
+  }
+  return { sessions, minutes };
+}
+
+function lastSevenDays(history, now = new Date()) {
+  const days = [];
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const entry = history[dateKeyOf(day)];
+    days.push({
+      key: dateKeyOf(day),
+      label: DAY_NAMES_ID[day.getDay()],
+      sessions: entry ? entry.sessions : 0,
+      minutes: entry ? entry.minutes : 0,
+      isToday: offset === 0,
+    });
+  }
+  return days;
+}
+
+function renderStats() {
+  const week = summarizeWeek(focusHistory);
+  el("statWeekMinutes").textContent = String(week.minutes);
+  el("statWeekSessions").textContent = String(week.sessions);
+
+  const hasAnyHistory = Object.values(focusHistory).some(
+    (entry) => entry.sessions > 0 || entry.minutes > 0
+  );
+  el("statsEmpty").hidden = hasAnyHistory;
+
+  const days = lastSevenDays(focusHistory);
+  const maxMinutes = Math.max(...days.map((day) => day.minutes), 0);
+  const chart = el("statsChart");
+  chart.innerHTML = "";
+
+  for (const day of days) {
+    const col = document.createElement("div");
+    col.className = "chart-col" + (day.isToday ? " is-today" : "");
+
+    const value = document.createElement("span");
+    value.className = "chart-value";
+    value.textContent = String(day.minutes);
+
+    const track = document.createElement("div");
+    track.className = "chart-track";
+    const bar = document.createElement("div");
+    bar.className = "chart-bar";
+    const pct =
+      day.minutes > 0 && maxMinutes > 0
+        ? Math.max(6, Math.round((day.minutes / maxMinutes) * 100))
+        : 0;
+    bar.style.height = pct + "%";
+    track.appendChild(bar);
+
+    const label = document.createElement("span");
+    label.className = "chart-day";
+    label.textContent = day.label;
+
+    col.append(value, track, label);
+    chart.appendChild(col);
+  }
+
+  const today = days[days.length - 1];
+  chart.setAttribute(
+    "aria-label",
+    `Grafik menit fokus 7 hari terakhir. Hari ini ${today.minutes} menit. Total minggu ini ${week.minutes} menit dari ${week.sessions} sesi.`
+  );
 }
 
 function readLocalTasks() {
@@ -181,6 +329,8 @@ function onSessionDone() {
     sessionsToday = readSessionsToday();
     sessionsToday += 1;
     writeLocalItem(SESSIONS_KEY, String(sessionsToday));
+    recordFocusSession(DURATIONS.focus / 60);
+    renderStats();
     const message = "Sesi fokus selesai. Waktunya istirahat 5 menit.";
     notifySession(message);
     setMode("break", message);
@@ -514,23 +664,28 @@ el("btnResetStorage").addEventListener("click", () => {
     localStorage.removeItem(TASKS_KEY);
     localStorage.removeItem(SESSIONS_KEY);
     localStorage.removeItem(SESSIONS_DATE_KEY);
+    localStorage.removeItem(HISTORY_KEY);
     storageWritable = true;
   } catch {
     // Keep going with in-memory defaults if storage remains blocked.
   }
   tasks = [];
   sessionsToday = 0;
+  focusHistory = {};
   hideStorageAlert();
   renderTimer();
+  renderStats();
   renderTasks();
 });
 
 function initApp() {
   renderTodayDate();
   sessionsToday = readSessionsToday();
+  ensureHistorySeed();
   tasks = readLocalTasks();
   el("taskLoading").hidden = true;
   renderTimer();
+  renderStats();
   renderTasks();
 }
 

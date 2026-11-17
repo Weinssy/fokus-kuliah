@@ -27,19 +27,20 @@ python -m http.server
 
 - **Timer Pomodoro:** mode Fokus 25 menit dan Istirahat 5 menit, tombol Mulai / Lanjutkan / Jeda / Reset, tampilan sisa waktu di judul tab browser, penghitung sesi fokus selesai beserta tombol nolkan hitungan, notifikasi browser saat sesi berakhir, serta perhitungan berbasis timestamp agar tetap akurat saat tab berada di latar.
 - **Daftar deadline:** formulir tambah tugas (nama tugas, mata kuliah, batas waktu) dengan validasi input, tandai selesai, filter status (`Semua`, `Aktif`, `Selesai`), hapus per tugas atau hapus semua yang selesai, pengurutan otomatis dari deadline terdekat, dan pemulihan saat data `localStorage` rusak.
+- **Statistik fokus:** setiap sesi fokus yang selesai tercatat per hari di `localStorage`, lalu ditampilkan sebagai total menit dan jumlah sesi pada minggu berjalan (Senin sampai Minggu) beserta grafik batang 7 hari terakhir. Statistik diperbarui otomatis begitu sesi selesai, tanpa perlu memuat ulang halaman.
 - **Desain dan aksesibilitas:** memakai arah visual Kertas & Tinta Kampus (lihat [DESIGN.md](DESIGN.md)), mendukung navigasi keyboard, indikator fokus terlihat, serta tata letak responsif untuk layar ponsel, tablet, dan desktop.
 
 ## Struktur file
 
 ```text
 fokus-kuliah/
-  index.html   struktur halaman, timer, dan daftar deadline
+  index.html   struktur halaman, timer, daftar deadline, dan statistik fokus
   style.css    tata letak responsif, tema kertas dan tinta, status komponen
-  script.js    logika timer berbasis timestamp, filter, dan penyimpanan lokal
+  script.js    logika timer berbasis timestamp, filter, riwayat fokus, dan penyimpanan lokal
   DESIGN.md    catatan arah desain, dial, palet warna, dan keputusan UI
   README.md    dokumentasi proyek
 ```
 
 ## Sengaja ditunda (bukan bagian MVP)
 
-Statistik belajar mingguan, sinkron kalender, akun pengguna, durasi custom, dan tema / dark mode.
+Sinkron kalender, akun pengguna, durasi custom, dan tema / dark mode.

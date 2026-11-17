@@ -747,6 +747,116 @@ main.container {
   color: #9e221b;
 }
 
+/* ===== Focus Statistics ===== */
+.stats-panel {
+  margin-top: 20px;
+}
+
+@media (min-width: 920px) {
+  .stats-panel {
+    margin-top: 24px;
+  }
+}
+
+.stats-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 40px;
+  margin-bottom: 20px;
+}
+
+.stat-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.stat-label {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.stats-empty {
+  margin-bottom: 18px;
+}
+
+.stats-empty[hidden] {
+  display: none;
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chart-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.chart-col.is-today .chart-value {
+  color: var(--accent-hover);
+}
+
+.chart-track {
+  width: 100%;
+  max-width: 44px;
+  height: 120px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--inset);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  width: 100%;
+  background: var(--rule-strong);
+}
+
+.chart-col.is-today .chart-bar {
+  background: var(--accent);
+}
+
+.chart-day {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chart-col.is-today .chart-day {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.stats-note {
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  color: var(--subtle);
+}
+
 /* ===== States & Inline Controls ===== */
 .state-box {
   margin: 8px 0 0;
