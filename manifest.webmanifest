@@ -1,0 +1,19 @@
+{
+  "name": "Fokus Kuliah: Timer Pomodoro dan Daftar Deadline",
+  "short_name": "Fokus Kuliah",
+  "description": "Timer belajar pomodoro dan catatan deadline kuliah lokal di browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F2EA",
+  "theme_color": "#F6F2EA",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

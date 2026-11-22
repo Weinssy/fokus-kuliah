@@ -4,17 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fokus Kuliah | Timer Pomodoro &amp; Deadline</title>
-  <meta name="description" content="Timer pomodoro 25/5 dan catatan deadline kuliah dalam satu halaman. Tanpa akun, tersimpan di browser." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23F6F2EA'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23B8432E' stroke-width='3.5'/%3E%3Cpath d='M16 10v6l4 2' fill='none' stroke='%231C1B18' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <meta name="description" content="Timer pomodoro dan catatan deadline kuliah dalam satu halaman. Tanpa akun, tersimpan di browser." />
+  <meta name="theme-color" content="#F6F2EA" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-mode="focus">
-  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+  <a href="#main-content" class="skip-link visually-hidden">Langsung ke konten utama</a>
 
   <header class="masthead container">
     <div class="masthead-title">
       <h1>Fokus Kuliah</h1>
-      <p class="tagline">Timer belajar 25/5 dan catatan deadline kuliah dalam satu halaman.</p>
+      <p class="tagline">Timer belajar pomodoro dan catatan deadline kuliah dalam satu halaman.</p>
     </div>
     <div class="masthead-meta" aria-label="Ringkasan sesi hari ini">
       <time id="todayDate" class="meta-item"></time>
@@ -43,6 +45,15 @@
           <button id="modeFocus" class="mode-btn is-active" type="button" aria-pressed="true">Fokus 25:00</button>
           <button id="modeBreak" class="mode-btn" type="button" aria-pressed="false">Istirahat 5:00</button>
           <button id="modeLongBreak" class="mode-btn" type="button" aria-pressed="false">Istirahat Panjang 15:00</button>
+        </div>
+
+        <div id="activeTaskBox" class="active-task-box" aria-live="polite">
+          <div class="active-task-copy">
+            <span class="active-task-kicker">Target fokus</span>
+            <p id="activeTaskTitle" class="active-task-title">Belum ada tugas tertaut. Pilih tombol Fokuskan di daftar deadline.</p>
+            <span id="activeTaskCourse" class="active-task-course" hidden></span>
+          </div>
+          <button id="btnClearActiveTask" type="button" class="btn-link active-task-clear" aria-label="Lepas tugas dari target fokus" hidden>Lepas</button>
         </div>
 
         <div class="ring-wrap">
@@ -85,7 +96,12 @@
           </button>
         </div>
 
-        <p id="cycleStatus" class="cycle-status">Siklus: 0 dari 4 sesi menuju istirahat panjang</p>
+        <div class="timer-subrow">
+          <p id="cycleStatus" class="cycle-status">Siklus: 0 dari 4 sesi menuju istirahat panjang</p>
+          <button id="btnSkip" class="btn-link" type="button">Lewati sesi</button>
+        </div>
+
+        <p class="shortcut-hint">Pintasan keyboard: Spasi untuk mulai atau jeda, R untuk reset.</p>
 
         <div class="timer-foot">
           <span>Sesi fokus selesai: <strong id="sessionCount">0</strong></span>
@@ -99,27 +115,39 @@
             <div class="settings-grid">
               <div class="field">
                 <label for="setFocus">Fokus (menit)</label>
-                <input id="setFocus" name="setFocus" type="number" min="1" max="180" step="1" value="25" inputmode="numeric" required />
+                <input id="setFocus" name="setFocus" type="number" min="1" max="180" step="1" value="25" inputmode="numeric" aria-invalid="false" required />
               </div>
               <div class="field">
                 <label for="setBreak">Istirahat (menit)</label>
-                <input id="setBreak" name="setBreak" type="number" min="1" max="90" step="1" value="5" inputmode="numeric" required />
+                <input id="setBreak" name="setBreak" type="number" min="1" max="90" step="1" value="5" inputmode="numeric" aria-invalid="false" required />
               </div>
               <div class="field">
                 <label for="setLongBreak">Istirahat panjang (menit)</label>
-                <input id="setLongBreak" name="setLongBreak" type="number" min="1" max="90" step="1" value="15" inputmode="numeric" required />
+                <input id="setLongBreak" name="setLongBreak" type="number" min="1" max="90" step="1" value="15" inputmode="numeric" aria-invalid="false" required />
               </div>
             </div>
             <button type="submit" class="btn-secondary settings-submit">Simpan Pengaturan</button>
-            <p id="settingsStatus" class="settings-status" aria-live="polite"></p>
+            <p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
           </form>
 
-          <div class="notify-row">
-            <label class="notify-label" for="notifyToggle">
-              <input id="notifyToggle" type="checkbox" />
-              <span>Notifikasi selesai sesi</span>
-            </label>
-            <p id="notifyStatus" class="notify-status">Nonaktif.</p>
+          <div class="toggle-list">
+            <div class="toggle-row">
+              <input id="soundToggle" type="checkbox" checked />
+              <label class="toggle-label" for="soundToggle">Bunyi penanda selesai sesi</label>
+            </div>
+
+            <div class="toggle-row">
+              <input id="autoStartToggle" type="checkbox" />
+              <label class="toggle-label" for="autoStartToggle">Mulai otomatis sesi berikutnya</label>
+            </div>
+
+            <div class="toggle-row toggle-row-stacked">
+              <div class="toggle-check">
+                <input id="notifyToggle" type="checkbox" />
+                <label class="toggle-label" for="notifyToggle">Notifikasi selesai sesi</label>
+              </div>
+              <p id="notifyStatus" class="notify-status">Nonaktif.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -135,17 +163,24 @@
 
           <div class="field field-full">
             <label for="taskName">Nama tugas</label>
-            <input id="taskName" name="taskName" type="text" placeholder="Contoh: Laporan Praktikum Basis Data" autocomplete="off" required />
+            <input id="taskName" name="taskName" type="text" placeholder="Contoh: Laporan Praktikum Basis Data" autocomplete="off" enterkeyhint="next" aria-invalid="false" required />
           </div>
 
-          <div class="field">
+          <div class="field field-full">
             <label for="taskCourse">Mata kuliah</label>
-            <input id="taskCourse" name="taskCourse" type="text" placeholder="Contoh: Sistem Informasi" autocomplete="off" required />
+            <input id="taskCourse" name="taskCourse" type="text" list="courseSuggestions" placeholder="Contoh: Sistem Informasi" autocomplete="off" enterkeyhint="next" aria-invalid="false" required />
+            <datalist id="courseSuggestions"></datalist>
           </div>
 
-          <div class="field">
-            <label for="taskDate">Batas waktu</label>
-            <input id="taskDate" name="taskDate" type="date" required />
+          <div class="field-pair">
+            <div class="field">
+              <label for="taskDate">Batas waktu</label>
+              <input id="taskDate" name="taskDate" type="date" aria-invalid="false" required />
+            </div>
+            <div class="field">
+              <label for="taskTime">Jam (opsional)</label>
+              <input id="taskTime" name="taskTime" type="time" />
+            </div>
           </div>
 
           <button type="submit" class="btn-primary form-submit">Tambah Deadline</button>
@@ -160,8 +195,21 @@
           <button id="btnClearDone" type="button" class="btn-link" hidden>Hapus yang selesai</button>
         </div>
 
+        <search class="ledger-search-row" aria-label="Cari dan saring daftar deadline">
+          <div class="field">
+            <label for="taskSearch" class="visually-hidden">Cari tugas atau mata kuliah</label>
+            <input id="taskSearch" name="taskSearch" type="search" placeholder="Cari tugas atau mata kuliah..." autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" />
+          </div>
+          <div class="field">
+            <label for="courseFilter" class="visually-hidden">Filter berdasarkan mata kuliah</label>
+            <select id="courseFilter" name="courseFilter">
+              <option value="all">Semua mata kuliah</option>
+            </select>
+          </div>
+        </search>
+
         <p id="taskLoading" class="state-box" aria-live="polite">Memuat daftar deadline tersimpan...</p>
-        <ul id="taskList" class="task-list"></ul>
+        <ul id="taskList" class="task-list" role="list"></ul>
         <div id="taskEmpty" class="state-box empty-box" hidden>
           <p id="taskEmptyText"></p>
           <button id="btnShowAll" type="button" class="btn-inline" hidden>Tampilkan semua tugas</button>
@@ -184,12 +232,38 @@
           <span class="stat-value" id="statWeekSessions">0</span>
           <span class="stat-label">sesi selesai minggu ini</span>
         </div>
+        <div class="stat-figure">
+          <span class="stat-value" id="statStreak">0</span>
+          <span class="stat-label">hari streak beruntun</span>
+        </div>
+        <div class="stat-figure">
+          <span class="stat-value" id="statDailyAvg">0</span>
+          <span class="stat-label">rata-rata menit per hari (7 hari)</span>
+        </div>
       </div>
 
       <p id="statsEmpty" class="state-box stats-empty" hidden>Belum ada sesi fokus yang tercatat. Selesaikan satu sesi fokus sampai tuntas dan riwayat belajarmu akan muncul di sini.</p>
 
       <div id="statsChart" class="chart" role="img" aria-label="Grafik menit fokus 7 hari terakhir"></div>
       <p class="stats-note">Grafik menampilkan menit fokus 7 hari terakhir. Batang berwarna aksen adalah hari ini.</p>
+
+      <div id="courseStatsWrap" class="course-stats" hidden>
+        <h3 class="course-stats-title">Distribusi Fokus per Mata Kuliah</h3>
+        <ul id="courseStatsList" class="course-stats-list" role="list"></ul>
+      </div>
+
+      <div class="backup-block">
+        <div class="backup-copy">
+          <h3 class="backup-title">Cadangan Data Lokal</h3>
+          <p class="backup-desc">Ekspor atau pulihkan daftar deadline, pengaturan, dan riwayat fokus sebagai berkas JSON.</p>
+        </div>
+        <div class="backup-actions">
+          <button id="btnExportData" type="button" class="btn-inline">Ekspor JSON</button>
+          <button id="btnImportData" type="button" class="btn-inline">Impor JSON</button>
+          <input id="importFileInput" type="file" accept=".json,application/json" hidden />
+        </div>
+      </div>
+      <p id="backupStatus" class="backup-status" role="status" aria-live="polite" hidden></p>
     </section>
   </main>
 
@@ -197,6 +271,7 @@
     <small>Fokus Kuliah. Data timer dan deadline tersimpan secara lokal di browser ini.</small>
   </footer>
 
+  <div id="liveAnnouncer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
   <script src="script.js"></script>
 </body>
 </html>

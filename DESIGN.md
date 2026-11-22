@@ -22,7 +22,7 @@ Core neutral surfaces and ink (verified >= 4.5:1 text contrast, >= 3.0:1 UI bord
 - `--inset`: `#EFE9DD` (recessed paper for segmented switcher and input surfaces)
 - `--ink`: `#1C1B18` (primary text, 16.94:1 on `--card`, 15.42:1 on `--paper`)
 - `--muted`: `#57534A` (secondary labels and course metadata, 7.54:1 on `--card`)
-- `--subtle`: `#766F61` (footer and helper captions, 4.90:1 on `--card`)
+- `--subtle`: `#655E52` (footer, disabled labels, and helper captions, 6.31:1 on `--card`, 5.74:1 on `--paper`, 5.30:1 on `--inset`)
 - `--rule`: `#D8D0C1` (structural notebook dividers)
 - `--rule-strong`: `#847B6C` (interactive control borders, 4.11:1 on `--card`)
 
